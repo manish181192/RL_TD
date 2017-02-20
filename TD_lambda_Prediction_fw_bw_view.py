@@ -27,7 +27,7 @@ def compute_discounted_reward(discount, reward, start_time_step, end_time_step):
         g[i] = reward[i] + discount * prev_g
         prev_g = g[i]
         i = i - 1
-    return g
+    return g[0]
 #################################################
 
 ### TD-Lambda ###
@@ -38,6 +38,7 @@ alpha = 0.001
 td_N = 0
 state_value = defaultdict(float)
 start_time = time()
+lambda_ = 0.5
 for i in range(no_of_episodes):
     print("#EPISODE"+str(i))
     state_list = [TIME_STEP_LIMIT]
@@ -53,9 +54,9 @@ for i in range(no_of_episodes):
         ##########################################################
         if time_step > td_N:
             i = time_step- td_N-1  # state for which value is updated
-            discounted_reward = reward[i]
+            discounted_reward = compute_discounted_reward(discount, reward,i,time_step)
             for j in range(td_N+1):
-                discounted_reward = discounted_reward + pow(discount, j + 1) * reward[j + 1]
+                discounted_reward = discounted_reward + lambda_ * pow(discount, j + 1) * reward[j + 1]
             td_error = (discounted_reward - state_value[state_list[i]])
             state_value[state_list[i]] = state_value[state_list[i]] + alpha * td_error
 
