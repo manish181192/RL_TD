@@ -19,8 +19,8 @@ def policy(state):
 
 no_of_episodes = 100000
 TIME_STEP_LIMIT = 50
-discount = 0.6
-alpha = 0.001
+discount = 0.9
+alpha = 0.9
 td_N = 0
 state_value = defaultdict(float)
 start_time = time()
@@ -38,12 +38,14 @@ for i in range(no_of_episodes):
         print("State:" + str(state_list[time_step]) + " Action:" + str(action[time_step]) + " REWARD:" + str(reward[time_step]))
         ##########################################################
         if time_step > td_N:
-            i = time_step- td_N-1  # state for which value is updated
-            discounted_reward = reward[i]
+            # state for which value is updated
+            target_state = time_step- td_N-1
+            discounted_reward = reward[target_state]
             for j in range(td_N+1):
                 discounted_reward = discounted_reward + pow(discount, j + 1) * reward[j + 1]
-            td_error = (discounted_reward - state_value[state_list[i]])
-            state_value[state_list[i]] = state_value[state_list[i]] + alpha * td_error
+            td_error = (discounted_reward - state_value[state_list[target_state]])
+            new_mean = state_value[state_list[target_state]] + alpha * td_error
+            state_value[state_list[target_state]] = new_mean
 
         ##########################################################
         if isTerminate:
@@ -52,26 +54,27 @@ for i in range(no_of_episodes):
             # compute G(t) for each time step ##############
             # G(t) = Rt + d*G(t+1)
             g = np.zeros(td_N + 1)
-            i = time_step
+            current_step = time_step
             prev_g = 0
-            j=0
-            while i >= time_step-td_N:
-                g[j] = reward[i] + discount * prev_g
-                prev_g = g[j]
-                i = i - 1
-                j= j+1
+            reward_index = 0
+            while current_step >= time_step-td_N:
+                g[reward_index] = reward[current_step] + discount * prev_g
+                prev_g = g[reward_index]
+                current_step = current_step - 1
+                reward_index = reward_index+1
             #################################################
 
             # calculate v(s) for every state ################
-            i = time_step-td_N
-            j=0
-            while i < time_step + 1:
+            ts = time_step-td_N
+            reward_index=0
+            while ts < time_step + 1:
                 # if state_list[i] in state_value:
                 # current state has already occured, incremental mean
-                mc_error = (g[j] - state_value[state_list[i]])
-                state_value[state_list[i]] = state_value[state_list[i]] + alpha * mc_error
-                i = i+1
-                j=j+1
+                mc_error = (g[reward_index] - state_value[state_list[ts]])
+                new_mean = state_value[state_list[ts]] + alpha * mc_error
+                state_value[state_list[ts]] = new_mean
+                ts = ts+1
+                reward_index = reward_index+1
             break
         else:
             state_list.append(state_)
